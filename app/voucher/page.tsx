@@ -1,6 +1,4 @@
 "use client"
-
-import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -10,15 +8,19 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LogOut, History, Save, Building2, BarChart3 } from "lucide-react"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 
 interface VoucherData {
   id: string
   voucherNo: string
   dateOfPayment: string
+  bankAcFrom: string
   companyName: string
   bankAccount: string
   transactionType: string
   purposeOfPayment: string
+  paymentFromCompany: string
   project: string
   beneficiaryName: string
   poNumber: string
@@ -39,14 +41,22 @@ export default function VoucherPage() {
   const router = useRouter()
   const [username, setUsername] = useState("")
   const [userRole, setUserRole] = useState("")
+  const [nextVoucherNumber, setNextVoucherNumber] = useState("")
+  const [paymentFromCompanies, setPaymentFromCompanies] = useState([])
+  const [bankAccounts, setBankAccounts] = useState([])
+  const [companyNames, setCompanyNames] = useState([]) // New state for company names
+  const [transactionTypes, setTransactionTypes] = useState([]) // New state for transaction types
+  const [projects, setProjects] = useState([]) // New state for projects
   const [voucherData, setVoucherData] = useState<VoucherData>({
     id: "",
     voucherNo: "",
     dateOfPayment: "",
+    bankAcFrom: "",
     companyName: "",
     bankAccount: "AXIS BANK LTD- CC A/C 8711-TANAY",
-    transactionType: "PAYMENT",
+    transactionType: "",
     purposeOfPayment: "",
+    paymentFromCompany: "",
     project: "",
     beneficiaryName: "",
     poNumber: "",
@@ -63,27 +73,243 @@ export default function VoucherPage() {
     submittedAt: "",
   })
 
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("tns_logged_in")
-    const storedUsername = localStorage.getItem("tns_username")
-    const storedUserRole = localStorage.getItem("tns_user_role")
+  // Add loading states at the top with other state declarations
+  const [isLoadingDropdowns, setIsLoadingDropdowns] = useState(true)
 
-    if (isLoggedIn !== "true") {
-      router.push("/")
-    } else {
-      setUsername(storedUsername || "User")
-      setUserRole(storedUserRole || "user")
-      // Generate unique voucher number and set current date
-      const voucherNumber = "TNS" + Date.now().toString().slice(-6)
-      const currentDate = new Date().toISOString().split("T")[0]
+  // Replace the existing fetch functions with these improved versions:
 
-      setVoucherData((prev) => ({
-        ...prev,
-        id: "voucher_" + Date.now(),
-        voucherNo: voucherNumber,
-        dateOfPayment: currentDate,
-      }))
+  const fetchCompanyNamesFromMaster = async () => {
+    try {
+      console.log("Fetching company names...")
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            action: "getCompanyNamesFromMaster",
+            sheetName: "Master",
+          }),
+        },
+      )
+
+      const result = await response.json()
+      console.log("Company names response:", result)
+      if (result.success && result.companyNames) {
+        setCompanyNames(result.companyNames)
+        console.log("Company names set:", result.companyNames.length)
+      } else {
+        console.error("Failed to fetch company names:", result)
+      }
+    } catch (error) {
+      console.error("Error fetching company names from master:", error)
     }
+  }
+
+  const fetchTransactionTypesFromMaster = async () => {
+    try {
+      console.log("Fetching transaction types...")
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            action: "getTransactionTypesFromMaster",
+            sheetName: "Master",
+          }),
+        },
+      )
+
+      const result = await response.json()
+      console.log("Transaction types response:", result)
+      if (result.success && result.transactionTypes) {
+        setTransactionTypes(result.transactionTypes)
+        console.log("Transaction types set:", result.transactionTypes.length)
+      } else {
+        console.error("Failed to fetch transaction types:", result)
+      }
+    } catch (error) {
+      console.error("Error fetching transaction types from master:", error)
+    }
+  }
+
+  const fetchProjectsFromMaster = async () => {
+    try {
+      console.log("Fetching projects...")
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            action: "getProjectsFromMaster",
+            sheetName: "Master",
+          }),
+        },
+      )
+
+      const result = await response.json()
+      console.log("Projects response:", result)
+      if (result.success && result.projects) {
+        setProjects(result.projects)
+        console.log("Projects set:", result.projects.length)
+      } else {
+        console.error("Failed to fetch projects:", result)
+      }
+    } catch (error) {
+      console.error("Error fetching projects from master:", error)
+    }
+  }
+
+  const fetchPaymentFromCompaniesFromMaster = async () => {
+    try {
+      console.log("Fetching payment from companies...")
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            action: "getPaymentFromCompaniesFromMaster",
+            sheetName: "Master",
+          }),
+        },
+      )
+
+      const result = await response.json()
+      console.log("Payment from companies response:", result)
+      if (result.success && result.paymentFromCompanies) {
+        setPaymentFromCompanies(result.paymentFromCompanies)
+        console.log("Payment from companies set:", result.paymentFromCompanies.length)
+      } else {
+        console.error("Failed to fetch payment from companies:", result)
+      }
+    } catch (error) {
+      console.error("Error fetching payment from companies from master:", error)
+    }
+  }
+
+  const fetchBankAccountsFromMaster = async () => {
+    try {
+      console.log("Fetching bank accounts...")
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            action: "getBankAccountsFromMaster",
+            sheetName: "Master",
+          }),
+        },
+      )
+
+      const result = await response.json()
+      console.log("Bank accounts response:", result)
+      if (result.success && result.bankAccounts) {
+        setBankAccounts(result.bankAccounts)
+        console.log("Bank accounts set:", result.bankAccounts.length)
+      } else {
+        console.error("Failed to fetch bank accounts:", result)
+      }
+    } catch (error) {
+      console.error("Error fetching bank accounts from master:", error)
+    }
+  }
+
+  // Function to get next voucher number with proper logic
+  const getNextVoucherNumber = async () => {
+    try {
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            action: "getNextVoucherNumber",
+            sheetName: "History",
+          }),
+        },
+      )
+
+      const result = await response.json()
+      if (result.success) {
+        return result.nextVoucherNumber
+      } else {
+        return "TNS-01"
+      }
+    } catch (error) {
+      console.error("Error getting next voucher number:", error)
+      return "TNS-01"
+    }
+  }
+
+  // Function to fetch bank accounts from Master sheet column D
+
+  // Update the useEffect function
+  useEffect(() => {
+    const initializeVoucher = async () => {
+      const isLoggedIn = localStorage.getItem("tns_logged_in")
+      const storedUsername = localStorage.getItem("tns_username")
+      const storedUserRole = localStorage.getItem("tns_user_role")
+
+      if (isLoggedIn !== "true") {
+        router.push("/")
+      } else {
+        setUsername(storedUsername || "User")
+        setUserRole(storedUserRole || "user")
+
+        setIsLoadingDropdowns(true)
+
+        try {
+          // Get next voucher number from Google Sheets
+          const nextVoucher = await getNextVoucherNumber()
+          setNextVoucherNumber(nextVoucher)
+
+          // Fetch all dropdown data from master sheet with proper sequencing
+          console.log("Starting to fetch all dropdown data...")
+
+          await Promise.all([
+            fetchBankAccountsFromMaster(),
+            fetchPaymentFromCompaniesFromMaster(),
+            fetchCompanyNamesFromMaster(),
+            fetchTransactionTypesFromMaster(),
+            fetchProjectsFromMaster(),
+          ])
+
+          console.log("All dropdown data fetched successfully")
+
+          const currentDate = new Date().toISOString().split("T")[0]
+
+          setVoucherData((prev) => ({
+            ...prev,
+            id: "voucher_" + Date.now(),
+            voucherNo: nextVoucher, // Use the nextVoucher variable here
+            dateOfPayment: currentDate,
+            bankAcFrom: "",
+          }))
+        } catch (error) {
+          console.error("Error fetching dropdown data:", error)
+        } finally {
+          setIsLoadingDropdowns(false)
+        }
+      }
+    }
+
+    initializeVoucher()
   }, [router])
 
   const handleLogout = () => {
@@ -154,42 +380,533 @@ export default function VoucherPage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Enhanced PDF generation function with professional styling
+  const generatePDFBlob = (voucherData) => {
+    return new Promise((resolve, reject) => {
+      try {
+        // Portrait orientation for voucher
+        const doc = new jsPDF("p", "mm", "a4")
+  
+        const pageWidth = 210 // A4 Portrait width
+        const pageHeight = 297 // A4 Portrait height
+        const margin = 10
+        let currentY = 15
+  
+        // Professional color palette
+        const colors = {
+          primary: [28, 48, 80], // Dark Blue
+          secondary: [90, 120, 150], // Muted Blue
+          accent: [200, 50, 50], // Muted Red
+          success: [40, 140, 80], // Green
+          background: {
+            light: [248, 248, 248], // Light Gray
+            blue: [235, 245, 255], // Very Light Blue
+            green: [240, 255, 240], // Very Light Green
+            yellow: [255, 252, 220], // Pale Yellow
+            amount: [230, 255, 230], // Light Green for amount
+          },
+          text: {
+            primary: [20, 20, 20], // Very Dark Gray
+            secondary: [60, 60, 60], // Dark Gray
+            muted: [120, 120, 120], // Medium Gray
+          },
+          border: {
+            primary: [80, 80, 80], // Dark Gray
+            secondary: [150, 150, 150], // Medium Gray
+          }
+        }
+  
+        const formatCurrency = (value) => {
+          const numValue = parseFloat(value) || 0
+          return "Rs. " + numValue.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })
+        }
+  
+        const formatDate = (dateString) => {
+          return new Date(dateString).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "2-digit", 
+            year: "numeric",
+          })
+        }
+  
+        // Main container border
+        doc.setDrawColor(...colors.border.primary)
+        doc.setLineWidth(2)
+        doc.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin)
+  
+        // Header Section
+        doc.setFillColor(...colors.background.blue)
+        doc.setDrawColor(...colors.border.primary)
+        doc.setLineWidth(1)
+        doc.rect(margin + 3, currentY, pageWidth - 2 * margin - 6, 22, "FD")
+  
+        // Company Name
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(18)
+        doc.setTextColor(...colors.primary)
+        doc.text(voucherData.companyName || "COMPANY NAME", pageWidth / 2, currentY + 8, { align: "center" })
+  
+        // Voucher Title
+        doc.setFontSize(12)
+        doc.setTextColor(...colors.secondary)
+        doc.text("BANK PAYMENT VOUCHER", pageWidth / 2, currentY + 16, { align: "center" })
+  
+        currentY += 28
+  
+        // Voucher Information Table - Better structured
+        const voucherInfoData = [
+          // Row 1
+          [
+            "VOUCHER NO:",
+            voucherData.voucherNo || "",
+            "DATE OF PAYMENT:", 
+            formatDate(voucherData.dateOfPayment),
+            "TRANSACTION TYPE:",
+            voucherData.transactionType || ""
+          ],
+          // Row 2
+          [
+            "BANK A/C FROM:",
+            voucherData.bankAcFrom || "",
+            "PURPOSE OF PAYMENT:",
+            voucherData.purposeOfPayment || "",
+            "PAYMENT FROM COMPANY:",
+            voucherData.paymentFromCompany || ""
+          ],
+          // Row 3
+          [
+            "PROJECT:",
+            voucherData.project || "",
+            "BENEFICIARY NAME (PAID TO):",
+            { content: voucherData.beneficiaryName || "", colSpan: 3, styles: { fontStyle: 'bold' } }
+          ],
+          // Row 4
+          [
+            "PO NUMBER:",
+            voucherData.poNumber || "N/A",
+            "BENEFICIARY A/C NAME:",
+            voucherData.beneficiaryAccountName || "",
+            "BENEFICIARY A/C NUMBER:",
+            voucherData.beneficiaryAccountNumber || ""
+          ],
+          // Row 5
+          [
+            "BENEFICIARY BANK NAME:",
+            voucherData.beneficiaryBankName || "",
+            "BENEFICIARY BANK IFSC:",
+            { content: voucherData.beneficiaryBankIFSC || "", colSpan: 3 }
+          ]
+        ]
+  
+        autoTable(doc, {
+          startY: currentY,
+          body: voucherInfoData,
+          margin: { left: margin + 3, right: margin + 3 },
+          tableWidth: pageWidth - 2 * margin - 6,
+          styles: {
+            cellPadding: 3,
+            lineColor: colors.border.primary,
+            lineWidth: 0.5,
+            textColor: colors.text.primary,
+            font: 'helvetica',
+            fontSize: 9,
+            overflow: 'linebreak'
+          },
+          columnStyles: {
+            0: { 
+              cellWidth: 30,
+              fillColor: colors.background.light,
+              fontStyle: 'bold',
+              fontSize: 8,
+              textColor: colors.primary
+            },
+            1: { cellWidth: 30 },
+            2: { 
+              cellWidth: 30,
+              fillColor: colors.background.light,
+              fontStyle: 'bold',
+              fontSize: 8,
+              textColor: colors.primary
+            },
+            3: { cellWidth: 30 },
+            4: { 
+              cellWidth: 30,
+              fillColor: colors.background.light,
+              fontStyle: 'bold',
+              fontSize: 8,
+              textColor: colors.primary
+            },
+            5: { cellWidth: 30 }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y
+          }
+        })
+  
+        currentY += 8
+  
+        // Particulars and Amount Section - Fixed Layout
+        const particularsAmountData = [
+          // Header row
+          [
+            { 
+              content: "PARTICULARS:", 
+              styles: { 
+                fontStyle: 'bold', 
+                fontSize: 10, 
+                fillColor: colors.background.light,
+                textColor: colors.primary,
+                halign: 'center'
+              } 
+            },
+            { 
+              content: "AMOUNT:", 
+              styles: { 
+                fontStyle: 'bold', 
+                fontSize: 10, 
+                fillColor: colors.background.yellow,
+                textColor: colors.primary,
+                halign: 'center'
+              } 
+            }
+          ],
+          // Content row
+          [
+            { 
+              content: voucherData.particulars || "", 
+              styles: { 
+                fontSize: 10, 
+                minCellHeight: 20,
+                valign: 'top',
+                cellPadding: 5
+              } 
+            },
+            { 
+              content: "Rs. " + (parseFloat(voucherData.amount || 0)).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }), 
+              styles: { 
+                fontSize: 12, 
+                fontStyle: 'bold', 
+                fillColor: colors.background.amount,
+                textColor: colors.success,
+                halign: 'center',
+                valign: 'middle',
+                minCellHeight: 20,
+                cellPadding: 6
+              } 
+            }
+          ]
+        ]
+  
+        autoTable(doc, {
+          startY: currentY,
+          body: particularsAmountData,
+          margin: { left: margin + 3, right: margin + 3 },
+          tableWidth: pageWidth - 2 * margin - 6,
+          styles: {
+            cellPadding: 4,
+            lineColor: colors.border.primary,
+            lineWidth: 0.8,
+            textColor: colors.text.primary,
+            font: 'helvetica',
+            overflow: 'linebreak'
+          },
+          columnStyles: {
+            0: { cellWidth: (pageWidth - 2 * margin - 6) * 0.7 },
+            1: { cellWidth: (pageWidth - 2 * margin - 6) * 0.3 }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y
+          }
+        })
+  
+        currentY += 3
+  
+        // Amount in Words Section
+        const amountWordsData = [
+          [
+            { 
+              content: `AMOUNT IN WORDS: ${voucherData.amountInWords || ""}`, 
+              styles: { 
+                fontSize: 10, 
+                fontStyle: 'bold', 
+                fillColor: colors.background.blue,
+                textColor: colors.primary,
+                cellPadding: 6
+              } 
+            }
+          ]
+        ]
+  
+        autoTable(doc, {
+          startY: currentY,
+          body: amountWordsData,
+          margin: { left: margin + 3, right: margin + 3 },
+          tableWidth: pageWidth - 2 * margin - 6,
+          styles: {
+            cellPadding: 4,
+            lineColor: colors.border.primary,
+            lineWidth: 0.8,
+            textColor: colors.text.primary,
+            font: 'helvetica'
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y
+          }
+        })
+  
+        currentY += 15
+  
+        // Signature Section - Properly aligned
+        const signatureData = [
+          // Header row
+          [
+            { 
+              content: "ENTRY DONE BY", 
+              styles: { 
+                fontStyle: 'bold', 
+                fontSize: 10, 
+                fillColor: colors.background.light,
+                textColor: colors.primary,
+                halign: 'center',
+                cellPadding: 4
+              } 
+            },
+            { 
+              content: "CHECKED BY", 
+              styles: { 
+                fontStyle: 'bold', 
+                fontSize: 10, 
+                fillColor: colors.background.light,
+                textColor: colors.primary,
+                halign: 'center',
+                cellPadding: 4
+              } 
+            },
+            { 
+              content: "APPROVED BY", 
+              styles: { 
+                fontStyle: 'bold', 
+                fontSize: 10, 
+                fillColor: colors.background.light,
+                textColor: colors.primary,
+                halign: 'center',
+                cellPadding: 4
+              } 
+            }
+          ],
+          // Empty signature space
+          [
+            { content: "", styles: { minCellHeight: 15 } },
+            { content: "", styles: { minCellHeight: 15 } },
+            { content: "", styles: { minCellHeight: 15 } }
+          ],
+          // Names row
+          [
+            { 
+              content: voucherData.entryDoneBy || "", 
+              styles: { 
+                fontStyle: 'bold', 
+                fontSize: 9, 
+                halign: 'center',
+                fillColor: colors.background.light,
+                textColor: colors.text.primary
+              } 
+            },
+            { 
+              content: voucherData.checkedBy || "", 
+              styles: { 
+                fontStyle: 'bold', 
+                fontSize: 9, 
+                halign: 'center',
+                fillColor: colors.background.light,
+                textColor: colors.text.primary
+              } 
+            },
+            { 
+              content: voucherData.approvedBy || "", 
+              styles: { 
+                fontStyle: 'bold', 
+                fontSize: 9, 
+                halign: 'center',
+                fillColor: colors.background.light,
+                textColor: colors.text.primary
+              } 
+            }
+          ]
+        ]
+  
+        autoTable(doc, {
+          startY: currentY,
+          body: signatureData,
+          margin: { left: margin + 3, right: margin + 3 },
+          tableWidth: pageWidth - 2 * margin - 6,
+          styles: {
+            cellPadding: 3,
+            lineColor: colors.border.primary,
+            lineWidth: 0.8,
+            textColor: colors.text.primary,
+            font: 'helvetica'
+          },
+          columnStyles: {
+            0: { cellWidth: (pageWidth - 2 * margin - 6) / 3 },
+            1: { cellWidth: (pageWidth - 2 * margin - 6) / 3 },
+            2: { cellWidth: (pageWidth - 2 * margin - 6) / 3 }
+          },
+          didDrawCell: function(data) {
+            // Draw signature line in the middle row
+            if (data.row.index === 1) {
+              const cellX = data.cell.x
+              const cellY = data.cell.y + data.cell.height - 4
+              const cellWidth = data.cell.width
+              
+              doc.setDrawColor(...colors.border.primary)
+              doc.setLineWidth(0.3)
+              doc.line(cellX + 8, cellY, cellX + cellWidth - 8, cellY)
+            }
+          },
+          didDrawPage: (data) => {
+            currentY = data.cursor.y
+          }
+        })
+  
+        currentY += 15
+  
+        // Footer
+        doc.setFillColor(...colors.background.light)
+        doc.setDrawColor(...colors.border.secondary)
+        doc.setLineWidth(0.3)
+        doc.rect(margin + 3, currentY, pageWidth - 2 * margin - 6, 12, "FD")
+  
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(8)
+        doc.setTextColor(...colors.primary)
+        doc.text(`Generated on: ${new Date().toLocaleString("en-IN")}`, pageWidth / 2, currentY + 5, { align: "center" })
+  
+        doc.setFont("helvetica", "normal")
+        doc.setFontSize(7)
+        doc.setTextColor(...colors.text.secondary)
+        doc.text("This is a computer generated voucher", pageWidth / 2, currentY + 9, { align: "center" })
+  
+        // Return base64 string
+        const base64Data = doc.output("datauristring").split(",")[1]
+        resolve(base64Data)
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+  // Modified handleSubmit function
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
-    const submissionData = {
-      ...voucherData,
-      submittedAt: new Date().toISOString(),
+    try {
+      const currentTimestamp = new Date().toISOString()
+
+      const submissionData = {
+        ...voucherData,
+        submittedAt: currentTimestamp,
+      }
+
+      // Save to localStorage (keep existing functionality)
+      const existingVouchers = JSON.parse(localStorage.getItem("tns_vouchers") || "[]")
+      existingVouchers.push(submissionData)
+      localStorage.setItem("tns_vouchers", JSON.stringify(existingVouchers))
+
+      // Generate PDF
+      const pdfBase64 = await generatePDFBlob(submissionData)
+      const fileName = `Voucher_${submissionData.voucherNo}_${new Date().toISOString().split("T")[0]}.pdf`
+
+      // Prepare data for Google Sheets
+      const sheetData = [
+        currentTimestamp,
+        submissionData.voucherNo,
+        submissionData.bankAcFrom,
+        submissionData.companyName,
+        submissionData.dateOfPayment,
+        submissionData.purposeOfPayment,
+        submissionData.paymentFromCompany,
+        submissionData.transactionType,
+        submissionData.project,
+        submissionData.beneficiaryName,
+        submissionData.poNumber,
+        submissionData.beneficiaryAccountName,
+        submissionData.beneficiaryAccountNumber,
+        submissionData.beneficiaryBankName,
+        submissionData.beneficiaryBankIFSC,
+        submissionData.particulars,
+        submissionData.amount,
+        submissionData.amountInWords,
+        submissionData.entryDoneBy,
+        submissionData.checkedBy,
+        submissionData.approvedBy,
+        "",
+      ]
+
+      // Submit to Google Sheets with PDF upload
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            sheetName: "History",
+            action: "insertWithPDF",
+            rowData: JSON.stringify(sheetData),
+            pdfData: pdfBase64,
+            fileName: fileName,
+            folderId: "1fnjCwWiu16-RBPNqjUGkKRVrf3o3Hwoo",
+          }),
+        },
+      )
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert(`Voucher submitted successfully! PDF uploaded to Google Drive: ${result.pdfUrl}`)
+
+        // Get next voucher number for the new form
+        const nextVoucher = await getNextVoucherNumber()
+        setNextVoucherNumber(nextVoucher)
+
+        // Reset form for new voucher
+        setVoucherData((prev) => ({
+          ...prev,
+          id: "voucher_" + Date.now(),
+          voucherNo: nextVoucher,
+          bankAcFrom: "",
+          companyName: "",
+          transactionType: "",
+          purposeOfPayment: "",
+          paymentFromCompany: "",
+          project: "",
+          beneficiaryName: "",
+          poNumber: "",
+          beneficiaryAccountName: "",
+          beneficiaryAccountNumber: "",
+          beneficiaryBankName: "",
+          beneficiaryBankIFSC: "",
+          amount: "",
+          amountInWords: "",
+          particulars: "",
+          entryDoneBy: "",
+          checkedBy: "",
+          approvedBy: "",
+        }))
+      } else {
+        throw new Error(result.error || "Failed to submit to Google Sheets")
+      }
+    } catch (error) {
+      console.error("Error submitting voucher:", error)
+      alert("Error submitting voucher: " + error.message)
     }
-
-    // Save to localStorage
-    const existingVouchers = JSON.parse(localStorage.getItem("tns_vouchers") || "[]")
-    existingVouchers.push(submissionData)
-    localStorage.setItem("tns_vouchers", JSON.stringify(existingVouchers))
-
-    alert("Voucher submitted successfully!")
-
-    // Reset form for new voucher
-    const newVoucherNumber = "TNS" + Date.now().toString().slice(-6)
-    setVoucherData((prev) => ({
-      ...prev,
-      id: "voucher_" + Date.now(),
-      voucherNo: newVoucherNumber,
-      purposeOfPayment: "",
-      project: "",
-      beneficiaryName: "",
-      poNumber: "",
-      beneficiaryAccountName: "",
-      beneficiaryAccountNumber: "",
-      beneficiaryBankName: "",
-      beneficiaryBankIFSC: "",
-      amount: "",
-      amountInWords: "",
-      particulars: "",
-      entryDoneBy: "",
-      checkedBy: "",
-      approvedBy: "",
-    }))
   }
 
   return (
@@ -269,6 +986,17 @@ export default function VoucherPage() {
               </div>
             </CardHeader>
 
+            {isLoadingDropdowns && (
+              <div className="p-4 bg-blue-50 text-blue-700 text-center">Loading dropdown data...</div>
+            )}
+
+            {!isLoadingDropdowns && (
+              <div className="p-2 bg-gray-50 text-xs text-gray-600 text-center">
+                Loaded: {bankAccounts.length} banks, {companyNames.length} companies, {transactionTypes.length}{" "}
+                transaction types, {projects.length} projects, {paymentFromCompanies.length} payment companies
+              </div>
+            )}
+
             <CardContent className="p-8">
               {/* Traditional Voucher Layout */}
               <div className="bg-white border-2 border-gray-800 p-6">
@@ -279,8 +1007,26 @@ export default function VoucherPage() {
 
                 {/* Main Voucher Grid */}
                 <div className="space-y-4">
-                  {/* Row 1: Bank AC From, Date, Purpose */}
+                  {/* Row 1: Bank AC From, Company Name, Date */}
                   <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">BANK AC FROM</Label>
+                      <Select
+                        value={voucherData.bankAcFrom}
+                        onValueChange={(value) => handleInputChange("bankAcFrom", value)}
+                      >
+                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+                          <SelectValue placeholder="Select Bank Account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bankAccounts.map((account, index) => (
+                            <SelectItem key={`bank-account-${index}-${account}`} value={account}>
+                              {account}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="col-span-4">
                       <Label className="text-xs font-bold text-gray-700 uppercase">COMPANY NAME</Label>
                       <Select
@@ -291,14 +1037,11 @@ export default function VoucherPage() {
                           <SelectValue placeholder="Select Company" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="HAMAR ENERGY (INDIA) PVT LTD">RBPENERGY (INDIA)PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR CONSTRUCTION PVT LTD">OM RENEWABLE (INDIA)PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR TRADING COMPANY">RAISONI ENERGY (INDIA)PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR LOGISTICS PVT LTD">TANAY VIDHYUT (INDIA)PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR TECH SOLUTIONS">HAMAR VIDHYUT (INDIA)PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR INFRASTRUCTURE LTD">RBP POWER (INDIA) PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR INFRASTRUCTURE LTD">ATHARV BUSSINESS</SelectItem>
-                          <SelectItem value="HAMAR INFRASTRUCTURE LTD">CORPORATION</SelectItem>
+                          {companyNames.map((company, index) => (
+                            <SelectItem key={`company-name-${index}-${company.replace(/\s+/g, "-")}`} value={company}>
+                              {company}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -312,6 +1055,10 @@ export default function VoucherPage() {
                         required
                       />
                     </div>
+                  </div>
+
+                  {/* Row 2: Purpose, Payment From Company, Transaction Type */}
+                  <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
                     <div className="col-span-4">
                       <Label className="text-xs font-bold text-gray-700 uppercase">PURPOSE OF PAYMENT</Label>
                       <Input
@@ -322,48 +1069,77 @@ export default function VoucherPage() {
                         required
                       />
                     </div>
-                  </div>
-
-                  {/* Row 2: Transaction Type, Voucher No, Project */}
-                  <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
-                    <div className="col-span-3">
+                    <div className="col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">PAYMENT FROM COMPANY</Label>
+                      <Select
+                        value={voucherData.paymentFromCompany}
+                        onValueChange={(value) => handleInputChange("paymentFromCompany", value)}
+                      >
+                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+                          <SelectValue placeholder="Select Payment From Company" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentFromCompanies.map((company, index) => (
+                            <SelectItem key={`payment-from-${index}-${company.replace(/\s+/g, "-")}`} value={company}>
+                              {company}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-4">
                       <Label className="text-xs font-bold text-gray-700 uppercase">TRANSACTION TYPE</Label>
                       <Select
                         value={voucherData.transactionType}
                         onValueChange={(value) => handleInputChange("transactionType", value)}
                       >
                         <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
-                          <SelectValue />
+                          <SelectValue placeholder="Select Transaction Type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="PAYMENT">PAYMENT</SelectItem>
-                          <SelectItem value="TRANSFER">TRANSFER</SelectItem>
-                          <SelectItem value="REFUND">REFUND</SelectItem>
+                          {transactionTypes.map((type, index) => (
+                            <SelectItem key={`transaction-type-${index}-${type.replace(/\s+/g, "-")}`} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-3">
+                  </div>
+
+                  {/* Row 3: Voucher No and Project */}
+                  <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="col-span-6">
                       <Label className="text-xs font-bold text-gray-700 uppercase">VOUCHER NO.</Label>
                       <Input
                         value={voucherData.voucherNo}
                         onChange={(e) => handleInputChange("voucherNo", e.target.value)}
                         className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
                         required
+                        readOnly
                       />
                     </div>
                     <div className="col-span-6">
                       <Label className="text-xs font-bold text-gray-700 uppercase">PROJECT</Label>
-                      <Input
+                      <Select
                         value={voucherData.project}
-                        onChange={(e) => handleInputChange("project", e.target.value)}
-                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
-                        placeholder="UPAD-ROTOMAG"
-                        required
-                      />
+                        onValueChange={(value) => handleInputChange("project", value)}
+                      >
+                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+                          <SelectValue placeholder="Select Project" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects.map((project, index) => (
+                            <SelectItem key={`project-${index}-${project.replace(/\s+/g, "-")}`} value={project}>
+                              {project}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
-                  {/* Row 3: Beneficiary Name, PO Number */}
+                  {/* Row 4: Beneficiary Name, PO Number */}
                   <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
                     <div className="col-span-8">
                       <Label className="text-xs font-bold text-gray-700 uppercase">BENEFICIARY NAME (PAID TO)</Label>
@@ -385,7 +1161,7 @@ export default function VoucherPage() {
                     </div>
                   </div>
 
-                  {/* Row 4: Beneficiary Account Details */}
+                  {/* Row 5: Beneficiary Account Details */}
                   <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
                     <div className="col-span-6">
                       <Label className="text-xs font-bold text-gray-700 uppercase">
@@ -411,7 +1187,7 @@ export default function VoucherPage() {
                     </div>
                   </div>
 
-                  {/* Row 5: Bank Name and IFSC */}
+                  {/* Row 6: Bank Name and IFSC */}
                   <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
                     <div className="col-span-6">
                       <Label className="text-xs font-bold text-gray-700 uppercase">BENEFICIARY BANK NAME</Label>
@@ -435,7 +1211,7 @@ export default function VoucherPage() {
                     </div>
                   </div>
 
-                  {/* Row 6: Particulars and Amount */}
+                  {/* Row 7: Particulars and Amount */}
                   <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
                     <div className="col-span-8">
                       <Label className="text-xs font-bold text-gray-700 uppercase">PARTICULARS</Label>
@@ -467,7 +1243,7 @@ export default function VoucherPage() {
                     </div>
                   </div>
 
-                  {/* Row 7: Amount in Words */}
+                  {/* Row 8: Amount in Words */}
                   <div className="border-b border-gray-400 pb-2">
                     <Label className="text-xs font-bold text-gray-700 uppercase">AMOUNT IN WORDS :</Label>
                     <Input
@@ -479,7 +1255,7 @@ export default function VoucherPage() {
                     />
                   </div>
 
-                  {/* Row 8: Approval Signatures */}
+                  {/* Row 9: Approval Signatures */}
                   <div className="grid grid-cols-3 gap-4 pt-4">
                     <div className="text-center">
                       <Label className="text-xs font-bold text-gray-700 uppercase block mb-2">ENTRY DONE BY</Label>
