@@ -134,7 +134,7 @@ export default function LoginPage() {
             <Building2 className="h-10 w-10 text-white" />
           </div>
           <CardTitle className="text-3xl font-bold">TNS Payment System</CardTitle>
-          <CardDescription className="text-blue-100 text-lg">Hamar Energy (India) Pvt Ltd</CardDescription>
+          {/* <CardDescription className="text-blue-100 text-lg">Hamar Energy (India) Pvt Ltd</CardDescription> */}
         </CardHeader>
 
         <CardContent className="p-8 bg-white">

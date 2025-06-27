@@ -291,12 +291,14 @@ export default function VoucherPage() {
                           <SelectValue placeholder="Select Company" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="HAMAR ENERGY (INDIA) PVT LTD">HAMAR ENERGY (INDIA) PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR CONSTRUCTION PVT LTD">HAMAR CONSTRUCTION PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR TRADING COMPANY">HAMAR TRADING COMPANY</SelectItem>
-                          <SelectItem value="HAMAR LOGISTICS PVT LTD">HAMAR LOGISTICS PVT LTD</SelectItem>
-                          <SelectItem value="HAMAR TECH SOLUTIONS">HAMAR TECH SOLUTIONS</SelectItem>
-                          <SelectItem value="HAMAR INFRASTRUCTURE LTD">HAMAR INFRASTRUCTURE LTD</SelectItem>
+                          <SelectItem value="HAMAR ENERGY (INDIA) PVT LTD">RBPENERGY (INDIA)PVT LTD</SelectItem>
+                          <SelectItem value="HAMAR CONSTRUCTION PVT LTD">OM RENEWABLE (INDIA)PVT LTD</SelectItem>
+                          <SelectItem value="HAMAR TRADING COMPANY">RAISONI ENERGY (INDIA)PVT LTD</SelectItem>
+                          <SelectItem value="HAMAR LOGISTICS PVT LTD">TANAY VIDHYUT (INDIA)PVT LTD</SelectItem>
+                          <SelectItem value="HAMAR TECH SOLUTIONS">HAMAR VIDHYUT (INDIA)PVT LTD</SelectItem>
+                          <SelectItem value="HAMAR INFRASTRUCTURE LTD">RBP POWER (INDIA) PVT LTD</SelectItem>
+                          <SelectItem value="HAMAR INFRASTRUCTURE LTD">ATHARV BUSSINESS</SelectItem>
+                          <SelectItem value="HAMAR INFRASTRUCTURE LTD">CORPORATION</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
