@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LogOut, History, Save, Building2, BarChart3 } from "lucide-react"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { Loader2 } from "lucide-react"
 
 interface VoucherData {
   id: string
@@ -20,7 +21,7 @@ interface VoucherData {
   bankAccount: string
   transactionType: string
   purposeOfPayment: string
-  paymentFromCompany: string
+  // paymentFromCompany: string
   project: string
   beneficiaryName: string
   poNumber: string
@@ -47,6 +48,9 @@ export default function VoucherPage() {
   const [companyNames, setCompanyNames] = useState([]) // New state for company names
   const [transactionTypes, setTransactionTypes] = useState([]) // New state for transaction types
   const [projects, setProjects] = useState([]) // New state for projects
+  const [filteredBankAccounts, setFilteredBankAccounts] = useState([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const [voucherData, setVoucherData] = useState<VoucherData>({
     id: "",
     voucherNo: "",
@@ -56,7 +60,7 @@ export default function VoucherPage() {
     bankAccount: "AXIS BANK LTD- CC A/C 8711-TANAY",
     transactionType: "",
     purposeOfPayment: "",
-    paymentFromCompany: "",
+    // paymentFromCompany: "",
     project: "",
     beneficiaryName: "",
     poNumber: "",
@@ -78,6 +82,101 @@ export default function VoucherPage() {
 
   // Replace the existing fetch functions with these improved versions:
 
+  const handleCompanySelection = (value) => {
+    console.log("\n🏢 Company Selection Handler Called")
+    console.log("Selected company:", value)
+    console.log("Current bankAccounts state:", bankAccounts)
+    
+    handleInputChange("companyName", value)
+    
+    // Add a small delay to ensure state is updated
+    setTimeout(() => {
+      const filtered = filterBankAccountsByCompany(value, bankAccounts)
+      console.log("Final filtered accounts:", filtered)
+      setFilteredBankAccounts(filtered)
+      
+      // Reset bank account selection if current selection is not in filtered list
+      if (voucherData.bankAcFrom && !filtered.includes(voucherData.bankAcFrom)) {
+        console.log("Resetting bank account selection")
+        handleInputChange("bankAcFrom", "")
+      }
+    }, 100)
+  }
+  
+  
+
+  const filterBankAccountsByCompany = (selectedCompany, allBankAccounts) => {
+    console.log("=== FILTERING DEBUG ===")
+    console.log("Selected Company:", selectedCompany)
+    console.log("All Bank Accounts:", allBankAccounts)
+    
+    if (!selectedCompany || !allBankAccounts.length) {
+      console.log("No company selected or no bank accounts available")
+      return allBankAccounts
+    }
+    
+    // More flexible keyword extraction
+    const companyKeywords = selectedCompany.split(' ').filter(word => {
+      const upperWord = word.toUpperCase()
+      const isValidKeyword = word.length > 2 && 
+        !['PVT', 'LTD', 'LIMITED', 'PRIVATE', 'INDIA', 'COMPANY', '(INDIA)'].includes(upperWord)
+      console.log(`Word: "${word}" -> Valid: ${isValidKeyword}`)
+      return isValidKeyword
+    })
+    
+    console.log("Keywords to match:", companyKeywords)
+    
+    // Try different matching strategies
+    const strategies = [
+      // Strategy 1: All keywords must be present (strict)
+      (account) => {
+        const upperAccount = account.toUpperCase()
+        const allMatch = companyKeywords.every(keyword => 
+          upperAccount.includes(keyword.toUpperCase())
+        )
+        console.log(`Strategy 1 - Account: "${account}" -> Match all keywords: ${allMatch}`)
+        return allMatch
+      },
+      
+      // Strategy 2: At least 2 keywords must be present (moderate)
+      (account) => {
+        const upperAccount = account.toUpperCase()
+        const matchCount = companyKeywords.filter(keyword => 
+          upperAccount.includes(keyword.toUpperCase())
+        ).length
+        const matches = matchCount >= Math.min(2, companyKeywords.length)
+        console.log(`Strategy 2 - Account: "${account}" -> Match count: ${matchCount}/${companyKeywords.length} -> Matches: ${matches}`)
+        return matches
+      },
+      
+      // Strategy 3: At least 1 keyword must be present (loose)
+      (account) => {
+        const upperAccount = account.toUpperCase()
+        const anyMatch = companyKeywords.some(keyword => 
+          upperAccount.includes(keyword.toUpperCase())
+        )
+        console.log(`Strategy 3 - Account: "${account}" -> Any match: ${anyMatch}`)
+        return anyMatch
+      }
+    ]
+    
+    // Try strategies in order of preference
+    for (let i = 0; i < strategies.length; i++) {
+      console.log(`\n--- Trying Strategy ${i + 1} ---`)
+      const filtered = allBankAccounts.filter(strategies[i])
+      console.log(`Strategy ${i + 1} results:`, filtered)
+      
+      if (filtered.length > 0) {
+        console.log(`✅ Strategy ${i + 1} found ${filtered.length} matches`)
+        return filtered
+      }
+      console.log(`❌ Strategy ${i + 1} found no matches`)
+    }
+    
+    console.log("⚠️ No strategy found matches, returning all accounts")
+    return allBankAccounts
+  }
+
   const fetchCompanyNamesFromMaster = async () => {
     try {
       console.log("Fetching company names...")
@@ -94,17 +193,51 @@ export default function VoucherPage() {
           }),
         },
       )
-
+  
       const result = await response.json()
       console.log("Company names response:", result)
       if (result.success && result.companyNames) {
-        setCompanyNames(result.companyNames)
-        console.log("Company names set:", result.companyNames.length)
+        // Remove duplicates using Set
+        const uniqueCompanyNames = [...new Set(result.companyNames)]
+        setCompanyNames(uniqueCompanyNames)
+        console.log("Company names set:", uniqueCompanyNames.length)
       } else {
         console.error("Failed to fetch company names:", result)
       }
     } catch (error) {
       console.error("Error fetching company names from master:", error)
+    }
+  }
+  
+  // Fix 3: Update the fetchBankAccountsFromMaster function to properly set filtered accounts
+  const fetchBankAccountsFromMaster = async () => {
+    try {
+      console.log("Fetching bank accounts...")
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            action: "getBankAccountsFromMaster",
+            sheetName: "Master",
+          }),
+        },
+      )
+  
+      const result = await response.json()
+      console.log("Bank accounts response:", result)
+      if (result.success && result.bankAccounts) {
+        setBankAccounts(result.bankAccounts)
+        setFilteredBankAccounts(result.bankAccounts) // Set initial filtered accounts
+        console.log("Bank accounts set:", result.bankAccounts.length)
+      } else {
+        console.error("Failed to fetch bank accounts:", result)
+      }
+    } catch (error) {
+      console.error("Error fetching bank accounts from master:", error)
     }
   }
 
@@ -198,35 +331,35 @@ export default function VoucherPage() {
     }
   }
 
-  const fetchBankAccountsFromMaster = async () => {
-    try {
-      console.log("Fetching bank accounts...")
-      const response = await fetch(
-        "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            action: "getBankAccountsFromMaster",
-            sheetName: "Master",
-          }),
-        },
-      )
+  // const fetchBankAccountsFromMaster = async () => {
+  //   try {
+  //     console.log("Fetching bank accounts...")
+  //     const response = await fetch(
+  //       "https://script.google.com/macros/s/AKfycbxxHogp4YBZ1VClZCdkEPyAddFUK6Y2grFmMrJHcqfIwufVG5ar9FACeVe_YIBb0PY9/exec",
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/x-www-form-urlencoded",
+  //         },
+  //         body: new URLSearchParams({
+  //           action: "getBankAccountsFromMaster",
+  //           sheetName: "Master",
+  //         }),
+  //       },
+  //     )
 
-      const result = await response.json()
-      console.log("Bank accounts response:", result)
-      if (result.success && result.bankAccounts) {
-        setBankAccounts(result.bankAccounts)
-        console.log("Bank accounts set:", result.bankAccounts.length)
-      } else {
-        console.error("Failed to fetch bank accounts:", result)
-      }
-    } catch (error) {
-      console.error("Error fetching bank accounts from master:", error)
-    }
-  }
+  //     const result = await response.json()
+  //     console.log("Bank accounts response:", result)
+  //     if (result.success && result.bankAccounts) {
+  //       setBankAccounts(result.bankAccounts)
+  //       console.log("Bank accounts set:", result.bankAccounts.length)
+  //     } else {
+  //       console.error("Failed to fetch bank accounts:", result)
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching bank accounts from master:", error)
+  //   }
+  // }
 
   // Function to get next voucher number with proper logic
   const getNextVoucherNumber = async () => {
@@ -265,23 +398,23 @@ export default function VoucherPage() {
       const isLoggedIn = localStorage.getItem("tns_logged_in")
       const storedUsername = localStorage.getItem("tns_username")
       const storedUserRole = localStorage.getItem("tns_user_role")
-
+  
       if (isLoggedIn !== "true") {
         router.push("/")
       } else {
         setUsername(storedUsername || "User")
         setUserRole(storedUserRole || "user")
-
+  
         setIsLoadingDropdowns(true)
-
+  
         try {
           // Get next voucher number from Google Sheets
           const nextVoucher = await getNextVoucherNumber()
           setNextVoucherNumber(nextVoucher)
-
+  
           // Fetch all dropdown data from master sheet with proper sequencing
           console.log("Starting to fetch all dropdown data...")
-
+  
           await Promise.all([
             fetchBankAccountsFromMaster(),
             fetchPaymentFromCompaniesFromMaster(),
@@ -289,15 +422,15 @@ export default function VoucherPage() {
             fetchTransactionTypesFromMaster(),
             fetchProjectsFromMaster(),
           ])
-
+  
           console.log("All dropdown data fetched successfully")
-
+  
           const currentDate = new Date().toISOString().split("T")[0]
-
+  
           setVoucherData((prev) => ({
             ...prev,
             id: "voucher_" + Date.now(),
-            voucherNo: nextVoucher, // Use the nextVoucher variable here
+            voucherNo: nextVoucher,
             dateOfPayment: currentDate,
             bankAcFrom: "",
           }))
@@ -308,7 +441,7 @@ export default function VoucherPage() {
         }
       }
     }
-
+  
     initializeVoucher()
   }, [router])
 
@@ -804,6 +937,7 @@ export default function VoucherPage() {
   // Modified handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsSubmitting(true) // Start loading
 
     try {
       const currentTimestamp = new Date().toISOString()
@@ -830,7 +964,7 @@ export default function VoucherPage() {
         submissionData.companyName,
         submissionData.dateOfPayment,
         submissionData.purposeOfPayment,
-        submissionData.paymentFromCompany,
+        // submissionData.paymentFromCompany,
         submissionData.transactionType,
         submissionData.project,
         submissionData.beneficiaryName,
@@ -885,7 +1019,7 @@ export default function VoucherPage() {
           companyName: "",
           transactionType: "",
           purposeOfPayment: "",
-          paymentFromCompany: "",
+          // paymentFromCompany: "",
           project: "",
           beneficiaryName: "",
           poNumber: "",
@@ -906,6 +1040,8 @@ export default function VoucherPage() {
     } catch (error) {
       console.error("Error submitting voucher:", error)
       alert("Error submitting voucher: " + error.message)
+    } finally{
+      setIsSubmitting(false) // Stop loading
     }
   }
 
@@ -1010,40 +1146,43 @@ export default function VoucherPage() {
                   {/* Row 1: Bank AC From, Company Name, Date */}
                   <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
                     <div className="col-span-4">
-                      <Label className="text-xs font-bold text-gray-700 uppercase">BANK AC FROM</Label>
+                      <Label className="text-xs font-bold text-gray-700 uppercase">Payment From Company Name</Label>
                       <Select
-                        value={voucherData.bankAcFrom}
-                        onValueChange={(value) => handleInputChange("bankAcFrom", value)}
-                      >
-                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
-                          <SelectValue placeholder="Select Bank Account" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {bankAccounts.map((account, index) => (
-                            <SelectItem key={`bank-account-${index}-${account}`} value={account}>
-                              {account}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+  value={voucherData.companyName}
+  onValueChange={handleCompanySelection}
+>
+  <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+    <SelectValue placeholder="Select Company" />
+  </SelectTrigger>
+  <SelectContent>
+    {companyNames.map((company, index) => (
+      <SelectItem key={`company-name-${index}-${company.replace(/\s+/g, "-")}`} value={company}>
+        {company}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
                     </div>
                     <div className="col-span-4">
-                      <Label className="text-xs font-bold text-gray-700 uppercase">COMPANY NAME</Label>
+                      <Label className="text-xs font-bold text-gray-700 uppercase">BANK AC FROM</Label>
                       <Select
-                        value={voucherData.companyName}
-                        onValueChange={(value) => handleInputChange("companyName", value)}
-                      >
-                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
-                          <SelectValue placeholder="Select Company" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {companyNames.map((company, index) => (
-                            <SelectItem key={`company-name-${index}-${company.replace(/\s+/g, "-")}`} value={company}>
-                              {company}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+  value={voucherData.bankAcFrom}
+  onValueChange={(value) => {
+    console.log("Bank account selected:", value)
+    handleInputChange("bankAcFrom", value)
+  }}
+>
+  <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+    <SelectValue placeholder={`Select Bank Account (${filteredBankAccounts.length} available)`} />
+  </SelectTrigger>
+  <SelectContent>
+    {(filteredBankAccounts.length > 0 ? filteredBankAccounts : bankAccounts).map((account, index) => (
+      <SelectItem key={`bank-account-${index}-${account}`} value={account}>
+        {account}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
                     </div>
                     <div className="col-span-4">
                       <Label className="text-xs font-bold text-gray-700 uppercase">DATE OF PAYMENT/PROCESS</Label>
@@ -1069,7 +1208,7 @@ export default function VoucherPage() {
                         required
                       />
                     </div>
-                    <div className="col-span-4">
+                    {/* <div className="col-span-4">
                       <Label className="text-xs font-bold text-gray-700 uppercase">PAYMENT FROM COMPANY</Label>
                       <Select
                         value={voucherData.paymentFromCompany}
@@ -1086,7 +1225,7 @@ export default function VoucherPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
+                    </div> */}
                     <div className="col-span-4">
                       <Label className="text-xs font-bold text-gray-700 uppercase">TRANSACTION TYPE</Label>
                       <Select
@@ -1289,14 +1428,24 @@ export default function VoucherPage() {
 
                 {/* Submit Button */}
                 <div className="flex justify-center pt-8 mt-8 border-t-2 border-gray-800">
-                  <Button
-                    type="submit"
-                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-12 py-3 text-lg font-semibold shadow-lg"
-                  >
-                    <Save className="mr-2 h-5 w-5" />
-                    Submit Voucher
-                  </Button>
-                </div>
+  <Button
+    type="submit"
+    disabled={isSubmitting}
+    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-12 py-3 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    {isSubmitting ? (
+      <>
+        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+        Submitting...
+      </>
+    ) : (
+      <>
+        <Save className="mr-2 h-5 w-5" />
+        Submit Voucher
+      </>
+    )}
+  </Button>
+</div>
               </div>
             </CardContent>
           </Card>
