@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { LogOut, History, Save, Building2, BarChart3, Menu, X } from "lucide-react"
+import { LogOut, History, Save, Building2, BarChart3 } from "lucide-react"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import { Loader2 } from "lucide-react"
@@ -50,7 +50,6 @@ export default function VoucherPage() {
   const [projects, setProjects] = useState([]) // New state for projects
   const [filteredBankAccounts, setFilteredBankAccounts] = useState<any[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const [voucherData, setVoucherData] = useState<VoucherData>({
     id: "",
@@ -330,7 +329,6 @@ export default function VoucherPage() {
     }
   }
 
-  // Function to get next voucher number with proper logic
   const getNextVoucherNumber = async () => {
     try {
       const response = await fetch(
@@ -359,7 +357,6 @@ export default function VoucherPage() {
     }
   }
 
-  // Update the useEffect function
   useEffect(() => {
     const initializeVoucher = async () => {
       const isLoggedIn = localStorage.getItem("tns_logged_in")
@@ -480,7 +477,6 @@ export default function VoucherPage() {
     }
   }
 
-  // Enhanced PDF generation function with professional styling
   const generatePDFBlob = (voucherData: { submittedAt?: string; id?: string; voucherNo: any; dateOfPayment: any; bankAcFrom: any; companyName: any; bankAccount?: string; transactionType: any; purposeOfPayment: any; project: any; beneficiaryName: any; poNumber: any; beneficiaryAccountName: any; beneficiaryAccountNumber: any; beneficiaryBankName: any; beneficiaryBankIFSC: any; amount: any; amountInWords: any; particulars: any; entryDoneBy: any; checkedBy: any; approvedBy: any; paymentFromCompany?: any }) => {
     return new Promise((resolve, reject) => {
       try {
@@ -901,7 +897,7 @@ export default function VoucherPage() {
       }
     })
   }
-  // Modified handleSubmit function
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true) // Start loading
@@ -1014,29 +1010,27 @@ export default function VoucherPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50">
-      {/* Mobile-Responsive Header */}
+      {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="bg-blue-600 p-1.5 sm:p-2 rounded-lg">
-                <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <Building2 className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-800">TNS Payment System</h1>
-                <p className="text-xs sm:text-sm text-gray-600">
+                <h1 className="text-xl font-bold text-gray-800">TNS Payment System</h1>
+                <p className="text-sm text-gray-600">
                   Welcome, {username} ({userRole})
                 </p>
               </div>
             </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex space-x-3">
+            <div className="flex flex-wrap justify-center gap-2">
               {userRole === "admin" && (
                 <Button
                   onClick={() => router.push("/dashboard")}
                   variant="outline"
-                  className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                  className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 text-sm md:text-base"
                 >
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Dashboard
@@ -1045,7 +1039,7 @@ export default function VoucherPage() {
               <Button
                 onClick={() => router.push("/history")}
                 variant="outline"
-                className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 text-sm md:text-base"
               >
                 <History className="mr-2 h-4 w-4" />
                 History
@@ -1053,138 +1047,88 @@ export default function VoucherPage() {
               <Button
                 onClick={handleLogout}
                 variant="outline"
-                className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 text-sm md:text-base"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
-              </Button>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2"
-              >
-                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             </div>
           </div>
-
-          {/* Mobile Navigation Menu */}
-          {isMobileMenuOpen && (
-            <div className="md:hidden mt-3 pt-3 border-t border-gray-200 space-y-2">
-              {userRole === "admin" && (
-                <Button
-                  onClick={() => {
-                    router.push("/dashboard")
-                    setIsMobileMenuOpen(false)
-                  }}
-                  variant="outline"
-                  className="w-full bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 justify-start"
-                  size="sm"
-                >
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  Dashboard
-                </Button>
-              )}
-              <Button
-                onClick={() => {
-                  router.push("/history")
-                  setIsMobileMenuOpen(false)
-                }}
-                variant="outline"
-                className="w-full bg-green-50 border-green-200 text-green-700 hover:bg-green-100 justify-start"
-                size="sm"
-              >
-                <History className="mr-2 h-4 w-4" />
-                History
-              </Button>
-              <Button
-                onClick={() => {
-                  handleLogout()
-                  setIsMobileMenuOpen(false)
-                }}
-                variant="outline"
-                className="w-full bg-red-50 border-red-200 text-red-700 hover:bg-red-100 justify-start"
-                size="sm"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
+      <div className="container mx-auto px-2 sm:px-4 py-4 md:py-8 max-w-4xl">
         <form onSubmit={handleSubmit}>
           <Card className="shadow-xl border-0 bg-white">
-            {/* Voucher Header - Mobile Responsive */}
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg p-4 sm:p-6">
+            {/* Voucher Header */}
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
               <div className="text-center space-y-2">
-                <CardTitle className="text-xl sm:text-2xl font-bold break-words">
-                  {voucherData.companyName || "SELECT COMPANY"}
-                </CardTitle>
-                <p className="text-blue-100 text-base sm:text-lg font-semibold">BANK PAYMENT VOUCHER</p>
-                <div className="flex flex-col sm:flex-row justify-between items-center mt-4 bg-white/10 rounded-lg p-3 space-y-2 sm:space-y-0">
-                  <div className="text-center sm:text-left">
-                    <p className="text-sm text-blue-100">Voucher No.</p>
+                <CardTitle className="text-xl md:text-2xl font-bold">{voucherData.companyName || "SELECT COMPANY"}</CardTitle>
+                <p className="text-blue-100 text-base md:text-lg font-semibold">BANK PAYMENT VOUCHER</p>
+                <div className="flex flex-col sm:flex-row justify-between items-center mt-2 sm:mt-4 bg-white/10 rounded-lg p-2 sm:p-3 space-y-2 sm:space-y-0">
+                  <div>
+                    <p className="text-xs sm:text-sm text-blue-100">Voucher No.</p>
                     <p className="text-base sm:text-lg font-bold">{voucherData.voucherNo}</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm text-blue-100">Date</p>
+                  <div>
+                    <p className="text-xs sm:text-sm text-blue-100">Date</p>
                     <p className="text-base sm:text-lg font-bold">
                       {new Date(voucherData.dateOfPayment).toLocaleDateString("en-IN")}
                     </p>
                   </div>
-                  <div className="text-center sm:text-right">
-                    <p className="text-sm text-blue-100">Type</p>
-                    <p className="text-base sm:text-lg font-bold break-words">{voucherData.transactionType}</p>
+                  <div>
+                    <p className="text-xs sm:text-sm text-blue-100">Type</p>
+                    <p className="text-base sm:text-lg font-bold">{voucherData.transactionType}</p>
                   </div>
                 </div>
               </div>
             </CardHeader>
 
             {isLoadingDropdowns && (
-              <div className="p-4 bg-blue-50 text-blue-700 text-center text-sm">Loading dropdown data...</div>
+              <div className="p-4 bg-blue-50 text-blue-700 text-center">Loading dropdown data...</div>
             )}
 
             {!isLoadingDropdowns && (
               <div className="p-2 bg-gray-50 text-xs text-gray-600 text-center">
-                <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
-                  <span>Banks: {bankAccounts.length}</span>
-                  <span>•</span>
-                  <span>Companies: {companyNames.length}</span>
-                  <span>•</span>
-                  <span>Types: {transactionTypes.length}</span>
-                  <span>•</span>
-                  <span>Projects: {projects.length}</span>
-                </div>
+                Loaded: {bankAccounts.length} banks, {companyNames.length} companies, {transactionTypes.length}{" "}
+                transaction types, {projects.length} projects,
+                {/* {paymentFromCompanies.length} payment companies */}
               </div>
             )}
 
-            <CardContent className="p-3 sm:p-6 lg:p-8">
-              {/* Traditional Voucher Layout - Mobile Responsive */}
-              <div className="bg-white border-2 border-gray-800 p-3 sm:p-6">
+            <CardContent className="p-2 sm:p-4 md:p-6 lg:p-8">
+              {/* Traditional Voucher Layout */}
+              <div className="bg-white border-2 border-gray-800 p-2 sm:p-4 md:p-6">
                 {/* Company Header */}
-                <div className="text-center mb-4 sm:mb-6 border-b-2 border-gray-800 pb-3 sm:pb-4">
-                  <h1 className="text-lg sm:text-2xl font-bold text-gray-800 break-words">
-                    {voucherData.companyName || "SELECT COMPANY"}
-                  </h1>
+                <div className="text-center mb-4 sm:mb-6 border-b-2 border-gray-800 pb-2 sm:pb-4">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">{voucherData.companyName || "SELECT COMPANY"}</h1>
                 </div>
 
-                {/* Mobile-First Form Layout */}
-                <div className="space-y-4 sm:space-y-6">
-
-                  {/* Basic Information Section */}
-                  <div className="space-y-4">
-                    {/* Bank AC From */}
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-gray-700 uppercase block">BANK AC FROM</Label>
+                {/* Main Voucher Grid */}
+                <div className="space-y-2 sm:space-y-4">
+                  {/* Row 1: Bank AC From, Company Name, Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="sm:col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">Payment From Company Name</Label>
+                      <Select
+                        value={voucherData.companyName}
+                        onValueChange={handleCompanySelection}
+                      >
+                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+                          <SelectValue placeholder="Select Company" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {companyNames.map((company, index) => (
+                            <SelectItem key={`company-name-${index}-${company.replace(/\s+/g, "-")}`} value={company}>
+                              {company}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="sm:col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">BANK AC FROM</Label>
                       <Select
                         value={voucherData.bankAcFrom}
                         onValueChange={(value) => {
@@ -1192,7 +1136,7 @@ export default function VoucherPage() {
                           handleInputChange("bankAcFrom", value)
                         }}
                       >
-                        <SelectTrigger className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600">
+                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
                           <SelectValue placeholder={`Select Bank Account (${filteredBankAccounts.length} available)`} />
                         </SelectTrigger>
                         <SelectContent>
@@ -1204,247 +1148,267 @@ export default function VoucherPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
-                    {/* Date and Transaction Type - Side by side on larger screens */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">DATE OF PAYMENT/PROCESS</Label>
-                        <Input
-                          type="date"
-                          value={voucherData.dateOfPayment}
-                          onChange={(e) => handleInputChange("dateOfPayment", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">TRANSACTION TYPE</Label>
-                        <Select
-                          value={voucherData.transactionType}
-                          onValueChange={(value) => handleInputChange("transactionType", value)}
-                        >
-                          <SelectTrigger className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600">
-                            <SelectValue placeholder="Select Transaction Type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {transactionTypes.map((type, index) => (
-                              <SelectItem key={`transaction-type-${index}-${type.replace(/\s+/g, "-")}`} value={type}>
-                                {type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Purpose and Project */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">PURPOSE OF PAYMENT</Label>
-                        <Input
-                          value={voucherData.purposeOfPayment}
-                          onChange={(e) => handleInputChange("purposeOfPayment", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600"
-                          placeholder=""
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">PROJECT</Label>
-                        <Select
-                          value={voucherData.project}
-                          onValueChange={(value) => handleInputChange("project", value)}
-                        >
-                          <SelectTrigger className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600">
-                            <SelectValue placeholder="Select Project" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {projects.map((project, index) => (
-                              <SelectItem key={`project-${index}-${project.replace(/\s+/g, "-")}`} value={project}>
-                                {project}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Voucher No and PO Number */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">VOUCHER NO.</Label>
-                        <Input
-                          value={voucherData.voucherNo}
-                          onChange={(e) => handleInputChange("voucherNo", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600 bg-gray-50"
-                          required
-                          readOnly
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">PO. NUMBER</Label>
-                        <Input
-                          value={voucherData.poNumber}
-                          onChange={(e) => handleInputChange("poNumber", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600"
-                        />
-                      </div>
+                    <div className="sm:col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">DATE OF PAYMENT/PROCESS</Label>
+                      <Input
+                        type="date"
+                        value={voucherData.dateOfPayment}
+                        onChange={(e) => handleInputChange("dateOfPayment", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
+                        required
+                      />
                     </div>
                   </div>
 
-                  {/* Beneficiary Information Section */}
-                  <div className="space-y-4 border-t-2 border-gray-400 pt-4">
-                    <h3 className="text-sm font-bold text-gray-800 uppercase">Beneficiary Information</h3>
+                  {/* Row 2: Purpose, Payment From Company, Transaction Type */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="sm:col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">PURPOSE OF PAYMENT</Label>
+                      <Input
+                        value={voucherData.purposeOfPayment}
+                        onChange={(e) => handleInputChange("purposeOfPayment", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600 text-center font-bold"
+                        placeholder=""
+                        required
+                      />
+                    </div>
+                    {/* <div className="sm:col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">PAYMENT FROM COMPANY</Label>
+                      <Select
+                        value={voucherData.paymentFromCompany}
+                        onValueChange={(value) => handleInputChange("paymentFromCompany", value)}
+                      >
+                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+                          <SelectValue placeholder="Select Payment From Company" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentFromCompanies.map((company, index) => (
+                            <SelectItem key={`payment-from-${index}-${company.replace(/\s+/g, "-")}`} value={company}>
+                              {company}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div> */}
+                    <div className="sm:col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">TRANSACTION TYPE</Label>
+                      <Select
+                        value={voucherData.transactionType}
+                        onValueChange={(value) => handleInputChange("transactionType", value)}
+                      >
+                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+                          <SelectValue placeholder="Select Transaction Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {transactionTypes.map((type, index) => (
+                            <SelectItem key={`transaction-type-${index}-${type.replace(/\s+/g, "-")}`} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-                    {/* Beneficiary Name */}
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-gray-700 uppercase block">BENEFICIARY NAME (PAID TO)</Label>
+                  {/* Row 3: Voucher No and Project */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="sm:col-span-6">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">VOUCHER NO.</Label>
+                      <Input
+                        value={voucherData.voucherNo}
+                        onChange={(e) => handleInputChange("voucherNo", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
+                        required
+                        readOnly
+                      />
+                    </div>
+                    <div className="sm:col-span-6">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">PROJECT</Label>
+                      <Select
+                        value={voucherData.project}
+                        onValueChange={(value) => handleInputChange("project", value)}
+                      >
+                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600 text-center font-bold">
+                          <SelectValue placeholder="Select Project" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects.map((project, index) => (
+                            <SelectItem key={`project-${index}-${project.replace(/\s+/g, "-")}`} value={project}>
+                              {project}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Row 4: Beneficiary Name, PO Number */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="sm:col-span-8">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">BENEFICIARY NAME (PAID TO)</Label>
                       <Input
                         value={voucherData.beneficiaryName}
                         onChange={(e) => handleInputChange("beneficiaryName", e.target.value)}
-                        className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600"
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
                         placeholder=""
                         required
                       />
                     </div>
-
-                    {/* Account Name and Number */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">
-                          BENEFICIARY A/C NAME
-                        </Label>
-                        <Input
-                          value={voucherData.beneficiaryAccountName}
-                          onChange={(e) => handleInputChange("beneficiaryAccountName", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600"
-                          placeholder=""
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">BENEFICIARY A/C NUMBER</Label>
-                        <Input
-                          value={voucherData.beneficiaryAccountNumber}
-                          onChange={(e) => handleInputChange("beneficiaryAccountNumber", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600"
-                          placeholder=""
-                          required
-                        />
-                      </div>
+                    <div className="sm:col-span-4">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">PO. NUMBER</Label>
+                      <Input
+                        value={voucherData.poNumber}
+                        onChange={(e) => handleInputChange("poNumber", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
+                      />
                     </div>
+                  </div>
 
-                    {/* Bank Name */}
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-gray-700 uppercase block">BENEFICIARY BANK NAME</Label>
+                  {/* Row 5: Beneficiary Account Details */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="sm:col-span-6">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">
+                        (NAME OF AC HOLDER) BENEFICIARY A/C NAME
+                      </Label>
+                      <Input
+                        value={voucherData.beneficiaryAccountName}
+                        onChange={(e) => handleInputChange("beneficiaryAccountName", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
+                        placeholder=""
+                        required
+                      />
+                    </div>
+                    <div className="sm:col-span-6">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">BENEFICIARY A/C NUMBER</Label>
+                      <Input
+                        value={voucherData.beneficiaryAccountNumber}
+                        onChange={(e) => handleInputChange("beneficiaryAccountNumber", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
+                        placeholder=""
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 6: Bank Name and IFSC */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="sm:col-span-6">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">BENEFICIARY BANK NAME</Label>
                       <Input
                         value={voucherData.beneficiaryBankName}
                         onChange={(e) => handleInputChange("beneficiaryBankName", e.target.value)}
-                        className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600"
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
                         placeholder=""
                         required
                       />
                     </div>
-                  </div>
-
-                  {/* Payment Details Section */}
-                  <div className="space-y-4 border-t-2 border-gray-400 pt-4">
-                    <h3 className="text-sm font-bold text-gray-800 uppercase">Payment Details</h3>
-
-                    {/* Particulars and Amount */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      <div className="lg:col-span-2 space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">PARTICULARS</Label>
-                        <Textarea
-                          value={voucherData.particulars}
-                          onChange={(e) => handleInputChange("particulars", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600 resize-none min-h-[80px]"
-                          placeholder=""
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block">AMOUNT</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={voucherData.amount}
-                          onChange={(e) => handleAmountChange(e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600 text-right font-bold"
-                          placeholder=""
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Amount in Words */}
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-gray-700 uppercase block">AMOUNT IN WORDS :</Label>
+                    <div className="sm:col-span-6">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">BENEFICIARY BANK IFSC</Label>
                       <Input
-                        value={voucherData.amountInWords}
-                        onChange={(e) => handleInputChange("amountInWords", e.target.value)}
-                        className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600"
+                        value={voucherData.beneficiaryBankIFSC}
+                        onChange={(e) => handleInputChange("beneficiaryBankIFSC", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
                         placeholder=""
                         required
                       />
                     </div>
                   </div>
 
-                  {/* Approval Section */}
-                  <div className="space-y-4 border-t-2 border-gray-400 pt-4">
-                    <h3 className="text-sm font-bold text-gray-800 uppercase">Approval Signatures</h3>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block text-center">ENTRY DONE BY</Label>
-                        <Input
-                          value={voucherData.entryDoneBy}
-                          onChange={(e) => handleInputChange("entryDoneBy", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600 text-center"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block text-center">CHECKED BY</Label>
-                        <Input
-                          value={voucherData.checkedBy}
-                          onChange={(e) => handleInputChange("checkedBy", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600 text-center"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-700 uppercase block text-center">APPROVED BY</Label>
-                        <Input
-                          value={voucherData.approvedBy}
-                          onChange={(e) => handleInputChange("approvedBy", e.target.value)}
-                          className="w-full border border-gray-400 rounded px-3 py-2 text-sm focus:border-gray-600 text-center"
-                          required
-                        />
+                  {/* Row 7: Particulars and Amount */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 border-b border-gray-400 pb-2">
+                    <div className="sm:col-span-8">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">PARTICULARS</Label>
+                      <Textarea
+                        value={voucherData.particulars}
+                        onChange={(e) => handleInputChange("particulars", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-1 min-h-[60px] text-sm focus:border-gray-600 resize-none"
+                        placeholder=""
+                        required
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">AMOUNT</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={voucherData.amount}
+                        onChange={(e) => handleAmountChange(e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600 text-right font-bold"
+                        placeholder=""
+                        required
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Label className="text-xs font-bold text-gray-700 uppercase">TOTAL</Label>
+                      <div className="border-0 border-b border-gray-400 px-1 py-0 h-8 text-sm font-bold text-right flex items-center">
+                        ₹{voucherData.amount ? Number.parseFloat(voucherData.amount).toLocaleString("en-IN") : "0"}
                       </div>
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <div className="flex justify-center pt-6 sm:pt-8 mt-6 sm:mt-8 border-t-2 border-gray-800">
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full sm:w-auto bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 sm:px-12 py-3 text-base sm:text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-5 w-5" />
-                          Submit Voucher
-                        </>
-                      )}
-                    </Button>
+                  {/* Row 8: Amount in Words */}
+                  <div className="border-b border-gray-400 pb-2">
+                    <Label className="text-xs font-bold text-gray-700 uppercase">AMOUNT IN WORDS :</Label>
+                    <Input
+                      value={voucherData.amountInWords}
+                      onChange={(e) => handleInputChange("amountInWords", e.target.value)}
+                      className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
+                      placeholder=""
+                      required
+                    />
                   </div>
+
+                  {/* Row 9: Approval Signatures */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 pt-4">
+                    <div className="text-center">
+                      <Label className="text-xs font-bold text-gray-700 uppercase block mb-2">ENTRY DONE BY</Label>
+                      <Input
+                        value={voucherData.entryDoneBy}
+                        onChange={(e) => handleInputChange("entryDoneBy", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600 text-center"
+                        required
+                      />
+                    </div>
+                    <div className="text-center">
+                      <Label className="text-xs font-bold text-gray-700 uppercase block mb-2">CHECKED BY</Label>
+                      <Input
+                        value={voucherData.checkedBy}
+                        onChange={(e) => handleInputChange("checkedBy", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600 text-center"
+                        required
+                      />
+                    </div>
+                    <div className="text-center">
+                      <Label className="text-xs font-bold text-gray-700 uppercase block mb-2">APPROVED BY</Label>
+                      <Input
+                        value={voucherData.approvedBy}
+                        onChange={(e) => handleInputChange("approvedBy", e.target.value)}
+                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600 text-center"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex justify-center pt-4 sm:pt-8 mt-4 sm:mt-8 border-t-2 border-gray-800">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-6 sm:px-12 py-2 sm:py-3 text-base sm:text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                        Submit Voucher
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </CardContent>

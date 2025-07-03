@@ -1146,24 +1146,24 @@ export default function VoucherPage() {
                                 <div className="space-y-4">
                                     {/* Row 1: Bank AC From, Company Name, Date */}
                                     <div className="grid grid-cols-12 gap-2 border-b border-gray-400 pb-2">
-                                        {/* <div className="col-span-4">
-                      <Label className="text-xs font-bold text-gray-700 uppercase">Payment From Company Name</Label>
-                      <Select
-                        value={voucherData.companyName}
-                        onValueChange={handleCompanySelection}
-                      >
-                        <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
-                          <SelectValue placeholder="Select Company" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {companyNames.map((company, index) => (
-                            <SelectItem key={`company-name-${index}-${company.replace(/\s+/g, "-")}`} value={company}>
-                              {company}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div> */}
+                                        <div className="col-span-4">
+                                            <Label className="text-xs font-bold text-gray-700 uppercase">Payment From Company Name</Label>
+                                            <Select
+                                                value={voucherData.companyName}
+                                                onValueChange={handleCompanySelection}
+                                            >
+                                                <SelectTrigger className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600">
+                                                    <SelectValue placeholder="Select Company" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {companyNames.map((company, index) => (
+                                                        <SelectItem key={`company-name-${index}-${company.replace(/\s+/g, "-")}`} value={company}>
+                                                            {company}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                         <div className="col-span-4">
                                             <Label className="text-xs font-bold text-gray-700 uppercase">BANK AC FROM</Label>
                                             <Select
@@ -1339,16 +1339,16 @@ export default function VoucherPage() {
                                                 required
                                             />
                                         </div>
-                                        {/* <div className="col-span-6">
-                      <Label className="text-xs font-bold text-gray-700 uppercase">BENEFICIARY BANK IFSC</Label>
-                      <Input
-                        value={voucherData.beneficiaryBankIFSC}
-                        onChange={(e) => handleInputChange("beneficiaryBankIFSC", e.target.value)}
-                        className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
-                        placeholder="b3442"
-                        required
-                      />
-                    </div> */}
+                                        <div className="col-span-6">
+                                            <Label className="text-xs font-bold text-gray-700 uppercase">BENEFICIARY BANK IFSC</Label>
+                                            <Input
+                                                value={voucherData.beneficiaryBankIFSC}
+                                                onChange={(e) => handleInputChange("beneficiaryBankIFSC", e.target.value)}
+                                                className="border-0 border-b border-gray-400 rounded-none px-1 py-0 h-8 text-sm focus:border-gray-600"
+                                                placeholder=""
+                                                required
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Row 7: Particulars and Amount */}
@@ -1375,12 +1375,12 @@ export default function VoucherPage() {
                                                 required
                                             />
                                         </div>
-                                        {/* <div className="col-span-2">
-                      <Label className="text-xs font-bold text-gray-700 uppercase">TOTAL</Label>
-                      <div className="border-0 border-b border-gray-400 px-1 py-0 h-8 text-sm font-bold text-right flex items-center">
-                        ₹{voucherData.amount ? Number.parseFloat(voucherData.amount).toLocaleString("en-IN") : "0"}
-                      </div>
-                    </div> */}
+                                        <div className="col-span-2">
+                                            <Label className="text-xs font-bold text-gray-700 uppercase">TOTAL</Label>
+                                            <div className="border-0 border-b border-gray-400 px-1 py-0 h-8 text-sm font-bold text-right flex items-center">
+                                                ₹{voucherData.amount ? Number.parseFloat(voucherData.amount).toLocaleString("en-IN") : "0"}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Row 8: Amount in Words */}
